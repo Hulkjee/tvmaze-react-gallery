@@ -11,24 +11,30 @@ import ShowList from './ShowList.jsx'
 import './App.css'
 
 function App() {
-  const [query, setQuery] = useState('Breaking Bad')
+  const [query, setQuery] = useState('')
   const [shows, setShows] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [searchTerm, setSearchTerm] = useState('Featured Shows')
 
-  async function searchShows(searchTerm) {
-    if (!searchTerm.trim()) {
+  // Fetch TV shows when the user searches
+  async function searchShows(term) {
+    const search = term.trim()
+
+    if (!search) {
       setShows([])
+      setSearchTerm('')
       setError('')
       return
     }
 
     setLoading(true)
     setError('')
+    setSearchTerm(search)
 
     try {
       const response = await fetch(
-        `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(searchTerm)}`
+        `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(search)}`
       )
 
       if (!response.ok) {
@@ -51,8 +57,67 @@ function App() {
     }
   }
 
+  // Load 10 featured TV shows when the page opens
   useEffect(() => {
-    searchShows('Breaking Bad')
+    let cancelled = false
+
+    async function loadFeaturedShows() {
+      const showNames = [
+        'Breaking Bad',
+        'Stranger Things',
+        'Friends',
+        'Game of Thrones',
+        'The Walking Dead',
+        'The Office',
+        'Sherlock',
+        'Dark',
+        'Wednesday',
+        'The Last of Us'
+      ]
+
+      setLoading(true)
+      setError('')
+
+      try {
+        const results = []
+
+        for (const name of showNames) {
+          const response = await fetch(
+            `https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(name)}`
+          )
+
+          if (!response.ok) {
+            throw new Error(
+              response.status === 429
+                ? 'Too many requests. Please try again later.'
+                : 'Failed to load featured shows.'
+            )
+          }
+
+          const show = await response.json()
+          results.push(show)
+        }
+
+        if (!cancelled) {
+          setShows(results)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setShows([])
+          setError(err.message)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadFeaturedShows()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   function handleSearch() {
@@ -70,12 +135,16 @@ function App() {
         onSearch={handleSearch}
       />
 
+      <h2>{searchTerm || 'Search Results'}</h2>
+
       {loading && <p>Loading shows...</p>}
+
       {error && <p role="alert">{error}</p>}
 
       {!loading && !error && (
         <>
           <p>Results: {shows.length}</p>
+
           {shows.length > 0 ? (
             <ShowList shows={shows} />
           ) : (
