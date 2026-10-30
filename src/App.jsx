@@ -6,8 +6,10 @@ Description: Main component for the TVmaze React Gallery.
 */
 
 import { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router'
 import SearchForm from './SearchForm.jsx'
 import ShowList from './ShowList.jsx'
+import ShowDetail from './ShowDetail.jsx'
 import './App.css'
 
 function App() {
@@ -25,6 +27,7 @@ function App() {
       setShows([])
       setSearchTerm('')
       setError('')
+      setLoading(false)
       return
     }
 
@@ -57,7 +60,7 @@ function App() {
     }
   }
 
-  // Load 10 featured TV shows when the page opens
+  // Load 10 featured shows when the page first opens
   useEffect(() => {
     let cancelled = false
 
@@ -125,41 +128,52 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <h1>TVmaze Show Gallery</h1>
-      <p>Find information about your favorite TV shows!</p>
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <div className="app">
+              <h1>TVmaze Show Gallery</h1>
+              <p>Find information about your favorite TV shows!</p>
 
-      <SearchForm
-        query={query}
-        setQuery={setQuery}
-        onSearch={handleSearch}
-      />
+              <SearchForm
+                query={query}
+                setQuery={setQuery}
+                onSearch={handleSearch}
+              />
 
-      <h2>{searchTerm || 'Search Results'}</h2>
+              <h2>{searchTerm || 'Search Results'}</h2>
 
-      {loading && <p>Loading shows...</p>}
+              {loading && <p>Loading shows...</p>}
 
-      {error && <p role="alert">{error}</p>}
+              {error && <p role="alert">{error}</p>}
 
-      {!loading && !error && (
-        <>
-          <p>Results: {shows.length}</p>
+              {!loading && !error && (
+                <>
+                  <p>Results: {shows.length}</p>
 
-          {shows.length > 0 ? (
-            <ShowList shows={shows} />
-          ) : (
-            <p>No shows found.</p>
-          )}
-        </>
-      )}
+                  {shows.length > 0 ? (
+                    <ShowList shows={shows} />
+                  ) : (
+                    <p>No shows found.</p>
+                  )}
+                </>
+              )}
 
-      <footer>
-        <p>
-          Show information provided by{' '}
-          <a href="https://www.tvmaze.com/">TVmaze</a>.
-        </p>
-      </footer>
-    </div>
+              <footer>
+                <p>
+                  Show information provided by{' '}
+                  <a href="https://www.tvmaze.com/">TVmaze</a>.
+                </p>
+              </footer>
+            </div>
+          }
+        />
+
+        <Route path="/shows/:id" element={<ShowDetail />} />
+      </Routes>
+    </Router>
   )
 }
 
